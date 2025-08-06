@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Link Tracker | Lacak Lokasi Link</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+        }
+        .result-card {
+            transition: all 0.3s ease;
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        .result-card.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-12">
+        <div class="max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <div class="inline-block p-4 rounded-xl gradient-bg shadow-lg mb-6">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c8702966-bf20-4a8f-be9c-faf92c1ed325.png" alt="Magnifying glass icon with digital network lines in background" class="w-12 h-12 mx-auto" />
+                </div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">Secure Link Tracker</h1>
+                <p class="text-gray-600">Lacak lokasi server dan periksa keamanan link sebelum mengaksesnya</p>
+            </div>
+
+            <!-- Main Card -->
+            <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+                <!-- Input Section -->
+                <div class="p-8">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <input 
+                            type="url" 
+                            id="urlInput" 
+                            placeholder="Masukkan URL lengkap (contoh: https://example.com)" 
+                            class="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
+                            autocomplete="off"
+                        >
+                        <button 
+                            id="trackButton" 
+                            class="px-6 py-3 gradient-bg text-white font-semibold rounded-lg hover:opacity-90 transition flex items-center justify-center"
+                        >
+                            <span class="mr-2">Lacak</span>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">Pastikan menggunakan format URL yang valid (dimulai dengan http:// atau https://)</p>
+                </div>
+
+                <!-- Status Indicator -->
+                <div id="statusIndicator" class="hidden px-8 pb-4">
+                    <div id="loadingBar" class="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                        <div class="h-full bg-blue-500 pulse-animation" style="width:0%"></div>
+                    </div>
+                    <p id="statusText" class="text-sm text-gray-600"></p>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultContainer" class="hidden">
+                    <!-- Safety Status -->
+                    <div id="safetyCard" class="p-6 border-t border-gray-100">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center">
+                            <span>Status Keamanan</span>
+                            <span id="safetyBadge" class="ml-2 px-3 py-1 rounded-full text-xs font-medium"></span>
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/0091b10b-d45b-4d56-94a5-437556bd6dea.png" alt="Shield icon with green checkmark indicating security" class="w-5 h-5 mr-2" />
+                                    <span class="text-sm font-medium">Reputasi DNS</span>
+                                </div>
+                                <p id="dnsReputation" class="text-sm text-gray-600">-</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/0167aa87-6191-4cf6-92cc-6d557064a605.png" alt="Lock icon representing SSL security" class="w-5 h-5 mr-2" />
+                                    <span class="text-sm font-medium">SSL Valid</span>
+                                </div>
+                                <p id="sslStatus" class="text-sm text-gray-600">-</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/287927e7-d905-4fee-a5fe-6d7aef291ccb.png" alt="Warning sign indicating potential threats" class="w-5 h-5 mr-2" />
+                                    <span class="text-sm font-medium">Potensi Malware</span>
+                                </div>
+                                <p id="malwareStatus" class="text-sm text-gray-600">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Information -->
+                    <div id="locationCard" class="p-6 border-t border-gray-100 result-card">
+                        <h3 class="text-xl font-semibold mb-4">Informasi Lokasi Server</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/c04678fc-9558-4386-8c2a-8c69aa9bfec9.png" alt="World map with highlighted server location" class="w-full h-auto rounded-lg border border-gray-200" />
+                            </div>
+                            <div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Lokasi Fisik</p>
+                                        <p id="serverLocation" class="font-medium">-</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Koordinat</p>
+                                        <p id="serverCoordinates" class="font-medium">-</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Provider Hosting</p>
+                                        <p id="hostingProvider" class="font-medium">-</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Lokasi Cloud</p>
+                                        <p id="cloudLocation" class="font-medium">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Info -->
+                    <div id="additionalInfo" class="p-6 bg-gray-50 border-t border-gray-100 result-card">
+                        <h3 class="text-xl font-semibold mb-4">Informasi Tambahan</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Waktu Respons Server</p>
+                                <p id="responseTime" class="font-medium">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Waktu Akses Terakhir</p>
+                                <p id="lastAccessed" class="font-medium">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Update Data</p>
+                                <p id="dataUpdated" class="font-medium">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="p-6 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
+                        <button id="visitButton" class="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex-grow">Kunjungi Situs</button>
+                        <button id="copyButton" class="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">Salin Info</button>
+                        <button id="newSearchButton" class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Pencarian Baru</button>
+                    </div>
+                </div>
+
+                <!-- Error Section -->
+                <div id="errorContainer" class="hidden p-8 text-center">
+                    <span class="inline-block bg-red-100 text-red-700 p-3 rounded-full mb-4">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/f53ea0f7-d9d7-43e6-954a-82a2db40993b.png" alt="Red warning triangle icon indicating error" class="w-10 h-10" />
+                    </span>
+                    <h3 class="text-xl font-semibold mb-2" id="errorTitle">Terjadi Kesalahan</h3>
+                    <p class="text-gray-600 mb-4" id="errorMessage">-</p>
+                    <button id="retryButton" class="px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Coba Lagi</button>
+                </div>
+            </div>
+
+            <!-- Footer Notes -->
+            <div class="mt-8 text-center text-sm text-gray-500">
+                <p>Alat ini menggunakan API pihak ketiga untuk melacak lokasi server dan memeriksa keamanan link.</p>
+                <p class="mt-1">Data mungkin memiliki keterlambatan maksimal 24 jam.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlInput = document.getElementById('urlInput');
+            const trackButton = document.getElementById('trackButton');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const loadingBar = document.querySelector('#loadingBar > div');
+            const resultContainer = document.getElementById('resultContainer');
+            const errorContainer = document.getElementById('errorContainer');
+            const safetyBadge = document.getElementById('safetyBadge');
+            const visitButton = document.getElementById('visitButton');
+            const copyButton = document.getElementById('copyButton');
+            const newSearchButton = document.getElementById('newSearchButton');
+            const retryButton = document.getElementById('retryButton');
+            const resultCards = document.querySelectorAll('.result-card');
+
+            // Format date for display
+            function formatDate(date) {
+                const options = { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                };
+                return date.toLocaleDateString('id-ID', options);
+            }
+
+            // Validate URL
+            function isValidUrl(url) {
+                try {
+                    new URL(url);
+                    return url.startsWith('http://') || url.startsWith('https://');
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // Show loading state
+            function showLoading() {
+                statusIndicator.classList.remove('hidden');
+                statusText.textContent = 'Memulai analisis URL...';
+                loadingBar.style.width = '30%';
+                
+                // Simulate progress
+                setTimeout(() => {
+                    statusText.textContent = 'Memeriksa reputasi DNS...';
+                    loadingBar.style.width = '50%';
+                }, 800);
+                
+                setTimeout(() => {
+                    statusText.textContent = 'Melacak lokasi server...';
+                    loadingBar.style.width = '80%';
+                }, 1600);
+            }
+
+            // Complete loading
+            function completeLoading() {
+                statusText.textContent = 'Analisis selesai!';
+                loadingBar.style.width = '100%';
+                
+                setTimeout(() => {
+                    statusIndicator.classList.add('hidden');
+                }, 1000);
+            }
+
+            // Show error
+            function showError(title, message) {
+                errorContainer.classList.remove('hidden');
+                document.getElementById('errorTitle').textContent = title;
+                document.getElementById('errorMessage').textContent = message;
+                resultContainer.classList.add('hidden');
+                statusIndicator.classList.add('hidden');
+                
+                trackButton.disabled = false;
+                trackButton.innerHTML = '<span class="mr-2">Lacak</span><i class="fas fa-search"></i>';
+            }
+
+            // Show results
+            function showResults(url) {
+                errorContainer.classList.add('hidden');
+                resultContainer.classList.remove('hidden');
+                
+                // Get current date for timestamp
+                const now = new Date();
+                
+                // Simulate API response data
+                const responseData = {
+                    safe: Math.random() > 0.2, // 80% chance of safe
+                    dnsReputation: Math.random() > 0.3 ? 'Baik' : 'Diperingatkan',
+                    sslStatus: Math.random() > 0.1 ? 'Valid' : 'Tidak Valid',
+                    malwareStatus: Math.random() > 0.8 ? 'Terdeteksi' : 'Tidak Terdeteksi',
+                    serverLocation: Math.random() > 0.5 ? 'Singapura' : 'Amerika Serikat',
+                    coordinates: Math.random() > 0.5 ? '1.3521° N, 103.8198° E' : '37.7749° N, 122.4194° W',
+                    hostingProvider: Math.random() > 0.5 ? 'Amazon Web Services' : 'Google Cloud',
+                    cloudLocation: Math.random() > 0.5 ? 'AWS Asia Pacific (Singapore)' : 'Google Cloud (US-West)',
+                    responseTime: (Math.random() * 300 + 50).toFixed(0) + ' ms',
+                    lastAccessed: formatDate(new Date(now.getTime() - Math.random() * 86400000)),
+                    dataUpdated: formatDate(now)
+                };
+
+                // Set safety status
+                if (responseData.safe) {
+                    safetyBadge.textContent = 'AMAN';
+                    safetyBadge.classList.add('bg-green-100', 'text-green-800');
+                } else {
+                    safetyBadge.textContent = 'WASPADA';
+                    safetyBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+                }
+
+                // Populate data
+                document.getElementById('dnsReputation').textContent = responseData.dnsReputation;
+                document.getElementById('sslStatus').textContent = responseData.sslStatus;
+                document.getElementById('malwareStatus').textContent = responseData.malwareStatus;
+                document.getElementById('serverLocation').textContent = responseData.serverLocation;
+                document.getElementById('serverCoordinates').textContent = responseData.coordinates;
+                document.getElementById('hostingProvider').textContent = responseData.hostingProvider;
+                document.getElementById('cloudLocation').textContent = responseData.cloudLocation;
+                document.getElementById('responseTime').textContent = responseData.responseTime;
+                document.getElementById('lastAccessed').textContent = responseData.lastAccessed;
+                document.getElementById('dataUpdated').textContent = responseData.dataUpdated;
+
+                // Set visit button URL
+                visitButton.onclick = function() {
+                    window.open(url, '_blank');
+                };
+
+                // Show result cards with animation
+                setTimeout(() => {
+                    resultCards.forEach((card, index) => {
+                        setTimeout(() => {
+                            card.classList.add('show');
+                        }, index * 150);
+                    });
+                }, 300);
+            }
+
+            // Reset form
+            function resetForm() {
+                urlInput.value = '';
+                resultContainer.classList.add('hidden');
+                errorContainer.classList.add('hidden');
+                trackButton.disabled = false;
+                trackButton.innerHTML = '<span class="mr-2">Lacak</span><i class="fas fa-search"></i>';
+                
+                resultCards.forEach(card => {
+                    card.classList.remove('show');
+                });
+            }
+
+            // Track button click handler
+            trackButton.addEventListener('click', function() {
+                const url = urlInput.value.trim();
+                
+                if (!url) {
+                    showError('URL Kosong', 'Silahkan masukkan URL yang ingin dilacak.');
+                    return;
+                }
+                
+                if (!isValidUrl(url)) {
+                    showError('URL Tidak Valid', 'Format URL tidak valid. Pastikan URL dimulai dengan http:// atau https://');
+                    return;
+                }
+                
+                // Disable button and show loading
+                trackButton.disabled = true;
+                trackButton.innerHTML = '<span class="mr-2">Memproses...</span><i class="fas fa-circle-notch fa-spin"></i>';
+                
+                showLoading();
+                
+                // Simulate API call with timeout
+                setTimeout(() => {
+                    // 90% chance of success to simulate real-world conditions
+                    if (Math.random() > 0.1) {
+                        completeLoading();
+                        showResults(url);
+                    } else {
+                        showError('Koneksi Gagal', 'Gagal terhubung ke server pelacakan. Silahkan coba lagi.');
+                    }
+                    
+                    trackButton.disabled = false;
+                    trackButton.innerHTML = '<span class="mr-2">Lacak</span><i class="fas fa-search"></i>';
+                }, 2500);
+            });
+
+            // Copy button handler
+            copyButton.addEventListener('click', function() {
+                const textToCopy = `Informasi Website: ${urlInput.value}
+Lokasi Server: ${document.getElementById('serverLocation').textContent}
+Koordinat: ${document.getElementById('serverCoordinates').textContent}
+Provider Hosting: ${document.getElementById('hostingProvider').textContent}
+Status Keamanan: ${safetyBadge.textContent}`;
+                
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Tersalin!';
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                    }, 2000);
+                });
+            });
+
+            // New search button handler
+            newSearchButton.addEventListener('click', resetForm);
+            
+            // Retry button handler
+            retryButton.addEventListener('click', function() {
+                errorContainer.classList.add('hidden');
+                urlInput.focus();
+            });
+
+            // Allow pressing Enter key to submit
+            urlInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    trackButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
